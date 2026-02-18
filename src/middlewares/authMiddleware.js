@@ -9,9 +9,8 @@ const authMiddleware = async (req, res, next) => {
 
     // Check if token exists
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Authorization token missing or invalid",
-      });
+      res.status(401);
+      throw new Error("Authorization token missing or invalid");
     }
 
     // Extract the token
@@ -21,12 +20,24 @@ const authMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach user to request object
-    req.user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(decoded.userId).select("-password");
+
+    // Check if user exists and is not blocked
+    if (!user) {
+      res.status(401);
+      throw new Error("User not found");
+    }
+
+    if (user.isBlocked) {
+      res.status(403);
+      throw new Error("User is blocked");
+    }
+
+    req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({
-      message: "Invalid or expired token",
-    });
+    // Pass error to global error handler
+    next(error);
   }
 };
 

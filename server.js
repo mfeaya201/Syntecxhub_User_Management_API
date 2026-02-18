@@ -1,11 +1,14 @@
 require("dotenv").config();
-console.log("JWT_SECRET =", process.env.JWT_SECRET);
 const express = require("express");
-const mongoose = require("mongoose");
-require("dotenv").config();
+const connectDB = require("./src/config/db");
 
 // Import routes
 const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const auditRoutes = require("./src/routes/auditRoutes");
+
+// Import error handler
+const errorHandler = require("./src/middlewares/errorMiddleware");
 
 const app = express();
 
@@ -14,15 +17,17 @@ app.use(express.json());
 
 // Register routes
 app.use("/api/auth", authRoutes);
-
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log("Mongo error:", err));
+app.use("/api/users", userRoutes);
+app.use("/api/audit", auditRoutes);
 
 // Health route (simple)
 app.get("/", (req, res) => res.send("OK"));
+
+// Global error handler
+app.use(errorHandler);
+
+// Connect to MongoDB
+connectDB();
 
 // Start server
 const PORT = process.env.PORT || 5000;

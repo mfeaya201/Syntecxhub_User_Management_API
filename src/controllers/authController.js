@@ -3,22 +3,20 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 // Signup function
-const signup = async (req, res) => {
+const signup = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "Please provide name, email, and password",
-      });
+      res.status(400);
+      throw new Error("Please provide name, email and password");
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        message: "User already exists",
-      });
+      res.status(400);
+      throw new Error("User with this email already exists");
     }
 
     // Hash password
@@ -45,22 +43,20 @@ const signup = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-      error: error.message,
-    });
+    // Pass error to global error handler
+    next(error);
   }
 };
 
 // Login function
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
+    // Validate required fields
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Please provide email and password",
-      });
+      res.status(400);
+      throw new Error("Please provide email and password");
     }
 
     // Find the user by email
@@ -68,9 +64,8 @@ const login = async (req, res) => {
 
     // If user not found
     if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+      res.status(401);
+      throw new Error("Invalid email or password");
     }
 
     // Compare password
@@ -78,26 +73,34 @@ const login = async (req, res) => {
 
     // If passwords don't match
     if (!isMatch) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+      res.status(401);
+      throw new Error("Invalid email or password");
+    }
+
+    // Check if user is blocked
+    if (user.isBlocked) {
+      res.status(403);
+      throw new Error("User is blocked");
     }
 
     // Generate JWT Token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
 
     // Send response
     res.status(200).json({
+      success: true,
       message: "Login successful",
       token,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-      error: error.message,
-    });
+    // Pass error to global error handler
+    next(error);
   }
 };
 

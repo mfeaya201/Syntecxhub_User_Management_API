@@ -1,152 +1,267 @@
-# Blog API
+# User Management API (Role-Based + Audit Trail)
 
-A simple RESTful blog API built with Node.js, Express, and MongoDB (Mongoose). This project provides user authentication (signup/login) and protected endpoints for creating blog posts.
+## Project Overview
 
-## Features
+A secure RESTful User Management API built with **Node.js, Express, and MongoDB**.
 
-- User signup and login with JWT authentication
-- Create blog posts (protected route)
-- MongoDB Atlas connection
-- Basic error handling and health check endpoint
+This project demonstrates:
 
-## Tech Stack
+- JWT Authentication
+- Role-Based Access Control (RBAC)
+- Admin-only user management
+- Audit logging for sensitive actions
+- Clean MVC architecture
+- Global error handling middleware
 
-- Node.js
-- Express
-- MongoDB (Mongoose)
-- JWT for auth
-- bcrypt for password hashing
+---
 
-## Project Structure
+## Repository
+
+```bash
+git clone https://github.com/mfeaya201/Syntecxhub_User_Management_API
+cd Syntecxhub_User_Management_API
+```
+
+---
+
+# Features
+
+## Authentication
+
+- User signup
+- User login
+- Password hashing using bcrypt
+- JWT-based session handling
+
+## Role-Based Access Control
+
+- Roles: `user`, `admin`
+- Admin-only routes protected by middleware
+- Role validation layered on top of authentication middleware
+
+## Admin Capabilities
+
+- View all users
+- Promote user to admin
+- Block users from logging in
+
+## Audit Logging
+
+Sensitive actions are logged automatically:
+
+- `PROMOTE_USER`
+- `BLOCK_USER`
+
+Each log stores:
+
+- Action type
+- Admin who performed the action
+- Target user
+- Timestamp
+
+Only admins can view audit logs.
+
+---
+
+# Tech Stack
+
+- **Node.js**
+- **Express**
+- **MongoDB (Mongoose)**
+- **jsonwebtoken**
+- **bcryptjs**
+- **dotenv**
+
+---
+
+# Project Structure
 
 ```
-blog-api/
+user-management-api/
 ├── src/
 │   ├── config/
 │   │   └── db.js
 │   ├── controllers/
 │   │   ├── authController.js
-│   │   └── blogController.js
+│   │   ├── userController.js
+│   │   └── auditController.js
 │   ├── middlewares/
-│   │   └── authMiddleware.js
+│   │   ├── authMiddleware.js
+│   │   ├── roleMiddleware.js
+│   │   └── errorMiddleware.js
 │   ├── models/
 │   │   ├── User.js
-│   │   └── BlogPost.js
-│   └── routes/
-│       ├── authRoutes.js
-│       └── blogRoutes.js
+│   │   └── AuditLog.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── userRoutes.js
+│   │   └── auditRoutes.js
 ├── .env
+├── .gitignore
 ├── server.js
-└── package.json
+├── package.json
+└── README.md
 ```
 
-## Getting Started
+---
 
-### Installation
+# Setup & Installation
 
-1. Clone the repository:
-
-```bash
-git clone <repo-url>
-cd blog-api
-```
-
-2. Install dependencies:
+## Install Dependencies
 
 ```bash
 npm install
 ```
 
-3. Create a `.env` file in the project root with the following values:
+---
 
-```
-MONGO_URI=<your_mongodb_connection_string>
-JWT_SECRET=<your_jwt_secret>
+## Create `.env` File
+
+```bash
 PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
 ```
 
-4. Start the server:
+---
+
+## Run the Server
+
+Development:
 
 ```bash
-npm run start
+npm run dev
 ```
 
-The server will run on `http://localhost:5000` by default.
-
-## API Endpoints
-
-### Health
-
-- GET `/` — returns `OK` (simple health check)
-
-### Auth
-
-- POST `/api/auth/signup` — register a user
-  - Body: `{ "name": "", "email": "", "password": "" }`
-- POST `/api/auth/login` — login and receive a JWT
-  - Body: `{ "email": "", "password": "" }`
-  - Response includes: `{ "token": "<JWT>" }`
-
-### Posts
-
-- POST `/api/posts` — create a blog post (requires `Authorization: Bearer <token>` header)
-  - Body: `{ "title": "", "body": "", "tags": ["tag1", "tag2"] }`
-
-- GET `/api/posts` — list posts with pagination, filtering and sorting
-  - Query parameters:
-    - `limit` (number, default 10)
-    - `skip` (number, default 0)
-    - `tag` (filter by a tag)
-    - `author` (filter by author id)
-    - `from` (ISO date string, createdAt >= from)
-    - `to` (ISO date string, createdAt <= to)
-    - `sort` (`newest` or `oldest`, default `newest`)
-  - Example: `/api/posts?limit=5&skip=0&tag=test&sort=newest`
-
-- GET `/api/posts/:id` — get a single post by id (public)
-
-- PUT `/api/posts/:id` — update a post (protected, only author)
-  - Body: `{ "title": "", "body": "", "tags": ["tag1"] }`
-
-- DELETE `/api/posts/:id` — delete a post (protected, only author)
-
-## Testing
-
-Use Postman or curl to test the endpoints. Example using `curl`:
+Production:
 
 ```bash
-# signup
-curl -X POST http://localhost:5000/api/auth/signup -H "Content-Type: application/json" -d '{"name":"Test","email":"t@test.com","password":"password"}'
-
-# login
-curl -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d '{"email":"t@test.com","password":"password"}'
-
-# create post (replace <TOKEN>)
-curl -X POST http://localhost:5000/api/posts -H "Content-Type: application/json" -H "Authorization: Bearer <TOKEN>" -d '{"title":"Hello","body":"World","tags":["intro"]}'
+npm start
 ```
 
-## Example API responses
+Server runs on:
 
-Sanitized example responses from the test suite are available in the `test_outputs/` folder. These contain sample JSON for:
+```
+http://localhost:5000
+```
 
-- `signup.json` — signup response
-- `login.json` — login response (token redacted)
-- `create_post.json` — created post
-- `list_posts.json` — paginated list response
-- `get_post.json` — single post
-- `update_post.json` — updated post
-- `delete_post.json` — delete confirmation
-- `filtered_posts.json` — filtered list by tag
+---
 
-You can use these files for screenshots or to validate API behavior during reviews.
+# API Endpoints
 
-## Tips
+---
 
-- Add `PORT` to `.env` if you want to run on a different port.
-- Use `nodemon` in development for auto-restart: `npm i -D nodemon` and add script `"dev": "nodemon server.js"`.
+## Authentication Routes
 
-## Author
+### ➤ Register
 
-Ayakha Mfengwana — Backend Development Intern
+**POST** `/api/auth/signup`
+
+```json
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+---
+
+### ➤ Login
+
+**POST** `/api/auth/login`
+
+Returns:
+
+```json
+{
+  "success": true,
+  "token": "JWT_TOKEN"
+}
+```
+
+---
+
+# Admin Routes (Protected)
+
+All require:
+
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+---
+
+### ➤ Get All Users
+
+**GET** `/api/users`
+
+---
+
+### ➤ Promote User
+
+**PUT** `/api/users/:id/promote`
+
+---
+
+### ➤ Block User
+
+**PUT** `/api/users/:id/block`
+
+Blocked users cannot log in.
+
+---
+
+# Audit Log Routes (Admin Only)
+
+### ➤ Get All Logs
+
+**GET** `/api/audit`
+
+Optional query parameters:
+
+```
+/api/audit?action=PROMOTE_USER
+/api/audit?action=BLOCK_USER
+/api/audit?user=<userId>
+```
+
+---
+
+# Example curl Test
+
+```bash
+curl http://localhost:5000/api/users \
+-H "Authorization: Bearer <TOKEN>"
+```
+
+---
+
+# Security Highlights
+
+- Passwords hashed with bcrypt
+- JWT expires in 1 hour
+- Role stored in JWT payload
+- Blocked users cannot authenticate
+- Sensitive actions automatically logged
+- Global error handling middleware
+
+---
+
+# What This Project Demonstrates
+
+- Clean backend architecture
+- Middleware layering
+- Role-based access control
+- Secure authentication practices
+- Audit logging implementation
+- Production-ready structure
+
+---
+
+# 👩🏽‍💻 Author
+
+**Ayakha Mfengwana**
+Backend Development Intern
 
 ---
